@@ -28,7 +28,7 @@ export { StatusFlow } from './show/StatusFlow';
 export type { StatusStep } from './show/StatusFlow';
 
 // хранилище картинок (загрузка)
-export { localStorageAdapter, backendStorageAdapter, vercelBlobStorageAdapter, presignedStorageAdapter, resolveFileUploads, hydrateFileFields } from './storage';
+export { localStorageAdapter, backendStorageAdapter, resolveFileUploads, hydrateFileFields } from './storage';
 export type { StorageAdapter } from './storage';
 
 // авторизация

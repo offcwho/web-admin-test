@@ -6,7 +6,7 @@ import { FileUpload as FileUploadCtrl, UploadedFile } from '@/adminkit/ui/FileUp
 import type { FieldConfig } from './fields';
 
 /** Рендерит ОДНО поле по его конфигу. Не знает про загрузку remote-опций — их передают через options. */
-export function FieldControl({ field: f, value, error, onChange, options, placeholder, disabled, progress }: {
+export function FieldControl({ field: f, value, error, onChange, options, placeholder, disabled }: {
   field: FieldConfig;
   value: any;
   error?: string;
@@ -14,7 +14,6 @@ export function FieldControl({ field: f, value, error, onChange, options, placeh
   options?: { value: string; label: string }[];
   placeholder?: string;
   disabled?: boolean;
-  progress?: Record<string, number>;
 }) {
   const common = { label: f.label ?? f.name, required: f.required, hint: f.hint, error, disabled: disabled ?? f.disabled };
   switch (f.type) {
@@ -37,7 +36,7 @@ export function FieldControl({ field: f, value, error, onChange, options, placeh
     case 'date':
       return <TI {...common} type="date" value={value} onChange={(e) => onChange(e.target.value)} />;
     case 'file':
-      return <FileUploadCtrl label={common.label} hint={f.hint} multiple={f.multiple} accept={f.accept} maxFiles={f.maxFiles} maxSizeMB={f.maxSizeMB} value={value as UploadedFile[]} onChange={onChange} progress={progress} />;
+      return <FileUploadCtrl label={common.label} hint={f.hint} multiple={f.multiple} accept={f.accept} maxFiles={f.maxFiles} maxSizeMB={f.maxSizeMB} value={value as UploadedFile[]} onChange={onChange} />;
     default:
       return <TI {...common} placeholder={f.placeholder} value={value} onChange={(e) => onChange(e.target.value)} />;
   }

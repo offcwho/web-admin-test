@@ -1,10 +1,12 @@
 'use client';
-import { upload } from '@vercel/blob/client';
-import { AdminKitProvider, AdminKitConfig, demoAuth, localStorageAdapter, vercelBlobStorageAdapter, jwtAuth } from '@/adminkit';
+import {
+  AdminKitProvider, AdminKitConfig, demoAuth, localStorageAdapter, /*, jwtAuth, backendStorageAdapter */
+  jwtAuth
+} from '@/adminkit';
 
 const config: AdminKitConfig = {
-  appName: 'AdminKit',
-  brand: 'AdminKit',
+  appName: 'AdminKit v1',
+  brand: 'AdminKit v1',
   backendUrl: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:9000/api',
 
   // карточка рабочего пространства в сайдбаре
@@ -20,13 +22,12 @@ const config: AdminKitConfig = {
     {
       title: 'Каталог', items: [
         { href: '/products', label: 'Товары', icon: 'box' },
-        { href: '/components', label: 'Компоненты', icon: 'grid' },
+        { href: '/categories', label: 'Категории', icon: 'grid' },
       ]
     },
     {
       title: 'Финансы', items: [
         { href: '/orders', label: 'Заказы', icon: 'wallet', badge: 3 },
-        { href: '/stats', label: 'Аналитика', icon: 'chart' },
       ]
     },
   ],
@@ -38,12 +39,7 @@ const config: AdminKitConfig = {
   layout: { search: true, user: true, themeToggle: true, notifications: true, workspace: true, promo: false },
 
   auth: jwtAuth(),
-  // куда грузить картинки (любой StorageAdapter):
-  //  localStorageAdapter()                                  — в самой админке (demo)
-  //  backendStorageAdapter({ endpoint: '/uploads' })        — multipart на твой бэк
-  // — Vercel Blob (import { upload } from '@vercel/blob/client')
-  //  presignedStorageAdapter({ presignPath: '/uploads/presign' }) — S3 и пр. через presigned URL
-  storage: vercelBlobStorageAdapter({ upload, handleUploadUrl: '/upload' }),
+  storage: localStorageAdapter(),
   demo: false,
 };
 
