@@ -23,7 +23,7 @@ a{color:inherit;text-decoration:none}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes popIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
 .fade-up{animation:fadeUp .5s both cubic-bezier(.21,.6,.35,1)}
-.page-enter{animation:fadeUp .42s both cubic-bezier(.21,.6,.35,1); height: 100%;}
+.page-enter{animation:fadeUp .42s both cubic-bezier(.21,.6,.35,1)}
 
 /* ===== shell ===== */
 .shell{display:flex;min-height:100vh}
@@ -142,7 +142,7 @@ textarea.control{resize:vertical;min-height:90px}
 /* ===== modal ===== */
 .overlay{position:fixed;inset:0;background:rgba(18,20,27,.5);backdrop-filter:blur(2px);display:flex;align-items:flex-start;justify-content:center;padding:48px 16px;overflow:auto;z-index:60;animation:fadeIn .15s both}
 .modal{background:var(--card);border-radius:18px;width:600px;max-width:100%;padding:24px;animation:popIn .2s both;box-shadow:var(--shadow)}
-.modal h3{margin:0 0 20px;font-size:20px}
+.modal h3{margin:0 0 4px;font-size:20px}
 .modal .sub{margin:0 0 18px;color:var(--muted);font-size:13px}
 .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
 .section-note{color:var(--muted);font-size:13px;margin:2px 0 18px}
@@ -226,3 +226,8 @@ textarea.control{resize:vertical;min-height:90px}
 .flow-step:not(:disabled):hover .flow-dot{border-color:var(--primary)}
 .flow-line{flex:1;height:2px;background:var(--border);margin:0 8px;border-radius:2px;transition:background .3s}
 .flow-line.done{background:var(--green)}
+
+/* ===== upload progress (на превью FileUpload) ===== */
+.dz-prog{position:absolute;top:0;left:0;right:0;height:96px;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.dz-prog-bar{position:absolute;left:0;bottom:0;height:4px;background:var(--primary);transition:width .2s ease}
+.dz-prog-txt{background:rgba(20,22,30,.62);color:#fff;font-size:12px;font-weight:700;padding:3px 9px;border-radius:20px}

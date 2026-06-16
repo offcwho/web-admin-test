@@ -4,7 +4,7 @@ import type { UploadedFile } from '@/adminkit/ui/FileUpload';
 
 /** Сменное хранилище картинок. upload() возвращает строку (имя/URL), которая уходит на бэк. */
 export interface StorageAdapter {
-  upload(file: File, api: Api): Promise<string>;
+  upload(file: File, api: Api, onProgress?: (percent: number) => void): Promise<string>;
   /** как превратить сохранённую строку в URL для превью (по умолчанию — она же) */
   resolveUrl?(value: string): string;
 }
@@ -81,7 +81,7 @@ export function hydrateFileFields(values: Record<string, any>, schema: AnyField[
 export async function resolveFileUploads(
   values: Record<string, any>,
   schema: AnyField[],
-  ctx: { storage: StorageAdapter; api: Api },
+  ctx: { storage: StorageAdapter; api: Api; onProgress?: (field: string, fileId: string, percent: number) => void },
 ): Promise<Record<string, any>> {
   const out = { ...values };
   for (const f of schema) {
@@ -91,10 +91,62 @@ export async function resolveFileUploads(
     const arr: UploadedFile[] = Array.isArray(out[c.name]) ? out[c.name] : [];
     const names: string[] = [];
     for (const uf of arr) {
-      if (uf.file) names.push(await adapter.upload(uf.file, ctx.api)); // новый файл -> залить
-      else names.push(uf.name);                                       // уже сохранённая строка
+      if (uf.file) names.push(await adapter.upload(uf.file, ctx.api, (p) => ctx.onProgress?.(c.name, uf.id, p))); // новый файл -> залить
+      else names.push(uf.name);                                                                                  // уже сохранённая строка
     }
     out[c.name] = c.multiple ? names : (names[0] ?? null);
   }
   return out;
+}
+
+/* =========================================================================
+ *  Дополнительные провайдеры загрузки. StorageAdapter — это просто объект с
+ *  upload(file, api) -> строка (URL/имя). Добавляй свои по этому же образцу.
+ * ========================================================================= */
+
+/**
+ * Vercel Blob: файл грузится напрямую в облако Vercel (минуя твой бэк), на бэк уходит URL.
+ * Пакет @vercel/blob НЕ импортируется китом — ты передаёшь клиентскую функцию upload сам,
+ * чтобы не плодить зависимость. В своём приложении:
+ *   import { upload } from '@vercel/blob/client';
+ *   storage: vercelBlobStorageAdapter({ upload, handleUploadUrl: '/upload' })
+ */
+export function vercelBlobStorageAdapter(opts: {
+  upload: (pathname: string, file: File, options: any) => Promise<{ url: string }>;
+  handleUploadUrl?: string;
+  prefix?: string;
+}): StorageAdapter {
+  const { upload, handleUploadUrl = '/upload', prefix = '' } = opts;
+  return {
+    async upload(file, _api, onProgress) {
+      const pathname = `${prefix}${prefix && !prefix.endsWith('/') ? '/' : ''}${file.name}`;
+      const blob = await upload(pathname, file, {
+        access: 'public',
+        handleUploadUrl,
+        onUploadProgress: (e: { percentage: number }) => onProgress?.(Math.round(e.percentage)),
+      });
+      return blob.url; // <- строка-ссылка уходит в payload (images: string[] / cover: string)
+    },
+    resolveUrl: (v) => v,
+  };
+}
+
+/**
+ * Шаблон под S3 (и любое presigned-хранилище): просим у бэка временный URL,
+ * грузим файл прямым PUT, возвращаем публичную ссылку.
+ * Бэк должен отдавать { uploadUrl, publicUrl } на GET <presignPath>?name=&type=
+ *   storage: presignedStorageAdapter({ presignPath: '/uploads/presign' })
+ */
+export function presignedStorageAdapter(opts: { presignPath?: string } = {}): StorageAdapter {
+  const { presignPath = '/uploads/presign' } = opts;
+  return {
+    async upload(file, api) {
+      const q = `?name=${encodeURIComponent(file.name)}&type=${encodeURIComponent(file.type)}`;
+      const { uploadUrl, publicUrl }: any = await api.get(`${presignPath}${q}`);
+      const res = await fetch(uploadUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+      if (!res.ok) throw new Error('Не удалось загрузить файл в хранилище');
+      return publicUrl;
+    },
+    resolveUrl: (v) => v,
+  };
 }

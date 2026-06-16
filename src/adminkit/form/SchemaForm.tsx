@@ -5,6 +5,7 @@ import { useAdminKit } from '../config';
 import { FieldControl } from './FieldControl';
 import { RepeaterControl } from './Repeater';
 import { slugify } from './slug';
+import { resolveFileUploads } from '../storage';
 import type { AnyField, FieldConfig } from './fields';
 
 export type FormValues = Record<string, any>;
@@ -40,10 +41,12 @@ export function SchemaForm({
   busy?: boolean;
 }) {
   const fields = useMemo(() => schema.map((f) => f.config), [schema]);
-  const { api } = useAdminKit();
+  const { api, storage } = useAdminKit();
   const [values, setValues] = useState<FormValues>(() => initial(fields, initialValues));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [remoteOptions, setRemoteOptions] = useState<Record<string, { value: string; label: string }[]>>({});
+  const [progress, setProgress] = useState<Record<string, number>>({});
+  const [uploading, setUploading] = useState(false);
   useEffect(() => { setValues(initial(fields, initialValues)); setErrors({}); }, [initialValues]); // eslint-disable-line
 
   // 1) независимые селекты — грузим один раз
@@ -123,7 +126,23 @@ export function SchemaForm({
     return Object.keys(e).length === 0;
   };
 
-  const submit = () => { if (validate()) onSubmit(values); };
+  const submit = async () => {
+    if (!validate()) return;
+    try {
+      setUploading(true);
+      setProgress({});
+      // заливаем новые файлы (с прогрессом) -> в values уже строки (string[] / string)
+      const resolved = await resolveFileUploads(values, schema, {
+        storage, api,
+        onProgress: (_field, id, percent) => setProgress((m) => ({ ...m, [id]: percent })),
+      });
+      onSubmit(resolved);
+    } catch (e: any) {
+      alert(e?.message || 'Ошибка загрузки файлов');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div>
@@ -145,12 +164,14 @@ export function SchemaForm({
             return wrap(<FieldControl field={f} value={values[f.name]} error={errors[f.name]} onChange={(v) => set(f.name, v)} options={opts} placeholder={ph} disabled={disabled} />);
           }
 
-          return wrap(<FieldControl field={f} value={values[f.name]} error={errors[f.name]} onChange={(v) => set(f.name, v)} />);
+          return wrap(<FieldControl field={f} value={values[f.name]} error={errors[f.name]} onChange={(v) => set(f.name, v)} progress={progress} />);
         })}
       </div>
       <div className="modal-actions">
-        {onCancel && <Button variant="ghost" onClick={onCancel}>Отмена</Button>}
-        <Button onClick={submit} disabled={busy}>{busy ? 'Сохранение…' : submitLabel}</Button>
+        {onCancel && <Button variant="ghost" onClick={onCancel} disabled={busy || uploading}>Отмена</Button>}
+        <Button onClick={submit} disabled={busy || uploading}>
+          {uploading ? 'Загрузка файлов…' : busy ? 'Сохранение…' : submitLabel}
+        </Button>
       </div>
     </div>
   );

@@ -20,15 +20,16 @@ class Entry {
   full(v = true) { this.config.full = v; return this; }
   formatStateUsing(fn: (value: any, row: any) => any) { this.config.format = fn; return this; }
 }
-class Badge extends Entry {
+class BadgeEntryField extends Entry {
   colors(m: Record<string, BadgeColor>) { this.config.colors = m; return this; }
   labels(m: Record<string, string>) { this.config.labels = m; return this; }
 }
-class Money extends Entry { currency(c = 'RUB') { this.config.money = c; return this; } }
+class MoneyEntryField extends Entry {
+  currency(c = 'RUB') { this.config.money = c; return this; }
+}
 
 export const TextEntry = { make: (key: string) => new Entry('text', key) };
-export const BadgeEntry2 = { make: (key: string) => new Badge('badge', key) };
-export const MoneyEntry = { make: (key: string) => new Money('money', key) };
+export const BadgeEntry = { make: (key: string) => new BadgeEntryField('badge', key) };
+export const MoneyEntry = { make: (key: string) => new MoneyEntryField('money', key) };
 export const DateEntry = { make: (key: string) => new Entry('date', key) };
-export const BadgeEntry = BadgeEntry2;
 export type AnyEntry = Entry;
