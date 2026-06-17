@@ -5,7 +5,7 @@ import { AdminLayout } from './layout';
 import { SchemaTable } from './table/SchemaTable';
 import { SchemaForm, FormValues } from './form/SchemaForm';
 import { AnyAction, Action, EditAction, DeleteAction } from './table/columns';
-import { resolveFileUploads, hydrateFileFields } from './storage';
+import { hydrateFileFields } from './storage';
 import { Button, Icon } from '@/adminkit/ui/primitives';
 import { RecordView } from './show/RecordView';
 import { StatusFlow } from './show/StatusFlow';
@@ -51,8 +51,8 @@ export function ResourcePage<T extends Record<string, any>>({ resource }: { reso
     if (!resource.form) return;
     setBusy(true);
     try {
-      const resolved = await resolveFileUploads(values, resource.form(), { storage, api });
-      const payload = resource.fromFormValues ? resource.fromFormValues(resolved) : resolved;
+      // файлы уже залиты в SchemaForm — здесь values содержат строки (string[] / string)
+      const payload = resource.fromFormValues ? resource.fromFormValues(values) : values;
       if (demo) {
         if (editing) setRows((r) => r.map((x) => x[pk] === editing[pk] ? { ...x, ...payload } : x));
         else setRows((r) => [{ [pk]: genId(), ...payload } as T, ...r]);
@@ -115,6 +115,7 @@ export function ResourcePage<T extends Record<string, any>>({ resource }: { reso
         <div className="overlay" onClick={() => setOpen(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{editing ? `Редактировать ${resource.singular ?? ''}` : `Новый ${resource.singular ?? 'элемент'}`}</h3>
+            <p className="sub">Форма построена из схемы ресурса</p>
             <SchemaForm
               schema={resource.form!()}
               initialValues={initialValues as FormValues}
@@ -134,6 +135,7 @@ export function ResourcePage<T extends Record<string, any>>({ resource }: { reso
               <h3 style={{ margin: 0 }}>Просмотр {resource.singular ?? ''}</h3>
               <button className="icon-btn" onClick={() => setViewing(null)}><Icon.x size={18} /></button>
             </div>
+
             {resource.statuses && (
               <div style={{ margin: '18px 0' }}>
                 <StatusFlow

@@ -369,3 +369,66 @@ createResource<Order>({
 Компоненты доступны и отдельно: `<RecordView entries={…} row={…} />`, `<StatusFlow statuses={…} value onChange />`.
 
 Демо: страница `/orders` — открой заказ и переведи его в «Отгружен».
+
+---
+
+## 12. Провайдеры загрузки: Vercel Blob, S3 и свои
+
+`StorageAdapter` — это просто `{ upload(file, api) => Promise<string>, resolveUrl? }`.
+Адаптер возвращает строку (URL/имя), и она уходит на бэк (`images: string[]` / `cover: string`).
+В комплекте 4 адаптера, легко добавить свой.
+
+### Vercel Blob (прямая загрузка в облако, минуя бэк)
+```ts
+// providers.tsx
+import { upload } from '@vercel/blob/client';        // пакет ставишь в СВОЁМ приложении
+storage: vercelBlobStorageAdapter({ upload, handleUploadUrl: '/upload' })
+```
+Кит сам `@vercel/blob` не импортирует (нет лишней зависимости) — клиентскую `upload`
+передаёшь ты. Нужно: `npm i @vercel/blob` и API-роут `app/upload/route.ts`:
+```ts
+import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
+import { NextResponse } from 'next/server';
+
+export async function POST(request: Request): Promise<NextResponse> {
+  const body = (await request.json()) as HandleUploadBody;
+  try {
+    const json = await handleUpload({
+      body, request,
+      onBeforeGenerateToken: async () => ({
+        allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp'],
+      }),
+      onUploadCompleted: async () => {},
+    });
+    return NextResponse.json(json);
+  } catch (e) {
+    return NextResponse.json({ error: (e as Error).message }, { status: 400 });
+  }
+}
+```
+Адаптер сам вызывает клиентский `upload(name, file, { access:'public', handleUploadUrl })`
+и кладёт `blob.url` в payload — твоему NestJS останется сохранить строку в Prisma.
+
+### S3 и прочие (presigned URL)
+```ts
+storage: presignedStorageAdapter({ presignPath: '/uploads/presign' })
+```
+Бэк отдаёт `{ uploadUrl, publicUrl }` на `GET /uploads/presign?name=&type=`,
+адаптер делает `PUT` файла на `uploadUrl` и возвращает `publicUrl`.
+
+### Свой адаптер (например, Cloudinary)
+```ts
+import type { StorageAdapter } from '@/adminkit';
+
+export function myStorageAdapter(): StorageAdapter {
+  return {
+    async upload(file, api) {
+      const url = /* загрузить куда угодно и получить ссылку */;
+      return url;             // строка уходит на бэк
+    },
+    resolveUrl: (v) => v,     // как показать превью по сохранённой строке
+  };
+}
+```
+Подключаешь так же — `storage: myStorageAdapter()`. Можно задать и на конкретном поле:
+`FileUpload.make('images').multiple().storage(vercelBlobStorageAdapter())`.

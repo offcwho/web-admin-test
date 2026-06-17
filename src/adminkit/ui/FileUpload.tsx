@@ -25,6 +25,8 @@ export interface FileUploadProps {
   coverBadge?: boolean;
   value?: UploadedFile[];
   onChange?: (files: UploadedFile[]) => void;
+  /** прогресс загрузки по id файла (0..100), показывается поверх превью */
+  progress?: Record<string, number>;
 }
 
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -32,7 +34,7 @@ const fmt = (b: number) => b < 1024 ? `${b} B` : b < 1048576 ? `${(b / 1024).toF
 
 export function FileUpload({
   label, hint, multiple = false, accept = 'image/*',
-  maxFiles = 8, maxSizeMB = 5, coverBadge = true, value, onChange,
+  maxFiles = 8, maxSizeMB = 5, coverBadge = true, value, onChange, progress,
 }: FileUploadProps) {
   const [internal, setInternal] = useState<UploadedFile[]>([]);
   const files = value ?? internal;
@@ -107,14 +109,24 @@ export function FileUpload({
 
       {files.length > 0 && (
         <div className="dz-grid">
-          {files.map((f, i) => (
-            <div className="dz-item" key={f.id}>
-              {coverBadge && multiple && i === 0 && <span className="cover">Обложка</span>}
-              <img src={f.url} alt={f.name} />
-              <button type="button" className="rm" title="Удалить" onClick={() => remove(f.id)}><Icon.x size={14} /></button>
-              <div className="meta">{f.name} · {fmt(f.size)}</div>
-            </div>
-          ))}
+          {files.map((f, i) => {
+            const p = progress?.[f.id];
+            const uploading = p != null && p < 100;
+            return (
+              <div className="dz-item" key={f.id}>
+                {coverBadge && multiple && i === 0 && <span className="cover">Обложка</span>}
+                <img src={f.url} alt={f.name} style={uploading ? { opacity: 0.5 } : undefined} />
+                {!uploading && <button type="button" className="rm" title="Удалить" onClick={() => remove(f.id)}><Icon.x size={14} /></button>}
+                {p != null && (
+                  <div className="dz-prog">
+                    <div className="dz-prog-bar" style={{ width: `${p}%` }} />
+                    <span className="dz-prog-txt">{p < 100 ? `${p}%` : '✓'}</span>
+                  </div>
+                )}
+                <div className="meta">{f.name} · {fmt(f.size)}</div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
