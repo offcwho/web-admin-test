@@ -1,7 +1,8 @@
 'use client';
 import {
   AdminKitProvider, AdminKitConfig, demoAuth, localStorageAdapter, /*, jwtAuth, backendStorageAdapter */
-  vercelBlobStorageAdapter
+  vercelBlobStorageAdapter,
+  jwtAuth
 } from '@/adminkit';
 import { upload } from '@vercel/blob/client';
 
@@ -40,14 +41,14 @@ const config: AdminKitConfig = {
   // какие элементы оболочки показывать
   layout: { search: true, user: true, themeToggle: true, notifications: true, workspace: true, promo: false },
 
-  auth: demoAuth(),
+  auth: jwtAuth(),
   // куда грузить картинки (любой StorageAdapter):
   //  localStorageAdapter()                                  — в самой админке (demo)
   //  backendStorageAdapter({ endpoint: '/uploads' })        — multipart на твой бэк
   //  vercelBlobStorageAdapter({ upload, handleUploadUrl: '/upload' }) — Vercel Blob (import { upload } from '@vercel/blob/client')
   //  presignedStorageAdapter({ presignPath: '/uploads/presign' }) — S3 и пр. через presigned URL
   storage: vercelBlobStorageAdapter({ upload, handleUploadUrl: '/upload' }),
-  demo: true,
+  demo: false,
 };
 
 export function Providers({ children }: { children: React.ReactNode }) {
