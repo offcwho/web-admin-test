@@ -19,6 +19,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         // TODO: проверь авторизацию (сессию/токен админа) перед выдачей токена.
         return {
           allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp'],
+          addRandomSuffix: true,
           tokenPayload: JSON.stringify({ /* напр. userId */ }),
         };
       },
