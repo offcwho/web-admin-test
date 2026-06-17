@@ -1,7 +1,6 @@
 'use client';
 import {
-  AdminKitProvider, AdminKitConfig, demoAuth, localStorageAdapter, /*, jwtAuth, backendStorageAdapter */
-  vercelBlobStorageAdapter,
+  AdminKitProvider, AdminKitConfig, demoAuth, vercelBlobStorageAdapter,
   jwtAuth
 } from '@/adminkit';
 import { upload } from '@vercel/blob/client';
@@ -24,7 +23,7 @@ const config: AdminKitConfig = {
     {
       title: 'Каталог', items: [
         { href: '/products', label: 'Товары', icon: 'box' },
-        {href: '/categories', label: 'Категории', icon: 'grid'},
+        { href: '/categories', label: 'Категории', icon: 'grid' },
       ]
     },
     {
